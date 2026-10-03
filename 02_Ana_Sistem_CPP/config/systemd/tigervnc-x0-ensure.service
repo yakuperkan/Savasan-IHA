@@ -1,0 +1,6 @@
+[Unit]
+Description=VNC servisini baslat (aktif degilse)
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c 'systemctl is-active --quiet tigervnc-x0.service || systemctl start tigervnc-x0.service'

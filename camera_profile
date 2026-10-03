@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# Kisa yol: ./camera_profile hangar | sunny | overcast
+exec "$(cd "$(dirname "$0")" && pwd)/scripts/set_camera_profile.sh" "$@"

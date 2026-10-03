@@ -1,0 +1,64 @@
+[Unit]
+Description=Savasan AIR_LOCK DeepStream Pipeline
+# Headless calisir; tam GPU/EGL + USB kamera erisimi gerekir.
+#  network-online.target : SIHA HTTP API icin GERCEK ag (network.target tek basina
+#                          arayuzlerin adres almasini garanti etmez).
+After=network-online.target
+Wants=network-online.target
+StartLimitBurst=5
+StartLimitIntervalSec=120
+
+[Service]
+# Oncelik: hafif CFS nice (guvenli). SCHED_RR 99 TUM surece verilirse DeepStream+GPU
+# yukunda kernel/systemd/SSH aglanir -> Jetson kilitlenir (fiş cekme gerekir).
+# Ileride RT yalnizca uygulama icinde secili gudum thread'ine uygulanmali.
+Nice=-20
+LimitRTPRIO=99
+AmbientCapabilities=CAP_SYS_NICE
+Type=notify
+User=nvidia
+Group=nvidia
+EnvironmentFile=-/etc/savasan/stream_common.env
+EnvironmentFile=/etc/savasan/savasan.env
+# nv3dsink icin X11: DISPLAY + GDM oturumundaki MIT-MAGIC-COOKIE (~/.Xauthority yok;
+# cookie /run/user/<uid>/gdm/Xauthority altinda).
+# HDMI yok / headless: /etc/savasan/savasan.env icinde SAVASAN_DISPLAY= satirini kaldirin veya bos birakin (fakesink).
+Environment=DISPLAY=:0
+Environment=XAUTHORITY=/run/user/1000/gdm/Xauthority
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+Environment=SAVASAN_DEBUG_LOG=/var/log/savasan/savasan_debug.log
+ExecStartPre=/usr/local/bin/savasan-backup-env.sh /etc/savasan/savasan.env /var/backups/savasan
+ExecStartPre=/usr/local/bin/savasan-validate-env.sh /etc/savasan/savasan.env
+ExecStartPre=/bin/bash -lc 'if [[ -n "${SAVASAN_NVP_MODEL:-}" ]] && command -v nvpmodel >/dev/null 2>&1; then nvpmodel -m "${SAVASAN_NVP_MODEL}" >/dev/null 2>&1 || true; fi'
+ExecStartPre=/bin/bash -lc 'if [[ "${SAVASAN_JETSON_CLOCKS:-0}" == "1" ]] && command -v jetson_clocks >/dev/null 2>&1; then jetson_clocks >/dev/null 2>&1 || true; fi'
+ExecStartPre=/bin/bash -lc 'if [[ "${SAVASAN_CAMERA:-}" == "usb" ]]; then /usr/local/bin/savasan-setup-usb-camera.sh; fi'
+# stdbuf -oL -eL: glibc, stdout/stderr bir pipe (journald) oldugunda TAM-buffer (block)
+# kullanir; Log() fwrite sonrasi flush etmedigi icin frame loglari birikir/gecikirdi.
+# Satir-buffer'a zorlar -> her satir aninda journald'a (gercek zamanli <5ms takibi).
+# LD_PRELOAD=libstdbuf.so cocuk surece (savasan-run.sh -> exec binary) gecer; binary
+# yolu DEGISMEZ. (LD_LIBRARY_PATH eklenmez; binary RUNPATH'i zaten gomulu.)
+ExecStart=/usr/bin/stdbuf -oL -eL /usr/local/bin/savasan-run.sh "${SAVASAN_PHASE}" "${SAVASAN_CAMERA}" "${SAVASAN_DISPLAY}"
+# Gorev-kritik guvenilirlik: crash VE watchdog (askida kalma) sonrasi aninda kurtarma.
+Restart=always
+RestartSec=3
+# Type=notify; uygulama her 10sn WATCHDOG=1 gonderir (g_timeout_add_seconds(10,...)).
+# 30sn margin (3x). Pipeline askida kalip heartbeat keserse systemd kill+restart eder.
+# Watchdog yalnizca READY=1 sonrasi armed olur -> ilk TensorRT engine derlemesini vurmaz.
+WatchdogSec=30
+# Ilk calismada nvinfer TensorRT engine derlemesi Jetson'da dakikalar surebilir (TimeoutStartSec=60 yetmez).
+TimeoutStartSec=1800
+# stdout/stderr dogrudan journald'a (ek log dosyasi yok). Izleme:
+#   journalctl -u savasan-airlock -f -o short-precise
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=savasan-airlock
+# Arka-plan daemon'un permission-denied ile cokmemesi icin donanim gruplari:
+#  video  : V4L2/USB kamera (/dev/video*), nvhost
+#  render : /dev/dri/renderD* (EGL/CUDA zero-copy NVMM)
+#  i2c    : /dev/i2c-* (sensor/kamera register)
+#  gpio   : /dev/gpiochip* (GPIO)
+#  dialout: otopilot seri linki (/dev/ttyTHS*, /dev/ttyUSB*) — ALC link bridge
+SupplementaryGroups=video render i2c gpio dialout
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Savasan AIR_LOCK healthcheck every minute
+
+[Timer]
+OnBootSec=60
+OnUnitActiveSec=60
+Unit=savasan-airlock-healthcheck.service
+
+[Install]
+WantedBy=timers.target

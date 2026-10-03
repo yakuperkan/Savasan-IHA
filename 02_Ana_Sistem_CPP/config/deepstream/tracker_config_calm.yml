@@ -1,0 +1,74 @@
+%YAML:1.0
+# =============================================================================
+# NvDCF Tracker — CALM profil (stabil / dusuk jitter)
+# =============================================================================
+# Dosya: tracker_config_calm.yml
+# Secim: SAVASAN_TRACKER_PROFILE=calm
+#
+# Ne zaman kullanilir?
+#   - Dusuk hiz, stabil ucus
+#   - Track titremesini (jitter) azaltmak istediginde
+#   - Gorsel benzerlige daha cok guven (IoU agirligi dusuk)
+#
+# Default'dan farki:
+#   - Daha dusuk process noise (daha az titreme)
+#   - Visual agirlik yuksek, IoU agirligi dusuk
+#   - filterLr dusuk (yavas adaptasyon = stabil)
+#
+# Degisiklik sonrasi: BUILD YOK, uygulama RESTART gerekir.
+# =============================================================================
+
+BaseConfig:
+  # Minimum detector guveni. Yuksek = daha az sahte track.
+  minDetectorConfidence: 0.40
+
+TargetManagement:
+  enableBboxUnClipping: 1
+  preserveStreamUpdateOrder: 0
+  maxTargetsPerStream: 4
+  minIouDiff4NewTarget: 0.50
+  minTrackerConfidence: 0.30
+  probationAge: 2
+  maxShadowTrackingAge: 8
+  earlyTerminationAge: 1
+
+TrajectoryManagement:
+  useUniqueID: 0
+
+DataAssociator:
+  dataAssociatorType: 0
+  associationMatcherType: 0
+  checkClassMatch: 1
+  minMatchingScore4Overall: 0.10
+  # Calm: boyut benzerligi esigi biraz daha siki.
+  minMatchingScore4SizeSimilarity: 0.60
+  minMatchingScore4Iou: 0.00
+  # Calm: gorsel benzerlik esigi yuksek (renk/doku oncelikli eslestirme).
+  minMatchingScore4VisualSimilarity: 0.50
+  # Calm: eslestirmede gorsel agirlik yuksek -> titreme azalir.
+  matchingScoreWeight4VisualSimilarity: 0.55
+  matchingScoreWeight4SizeSimilarity: 0.05
+  # Calm: IoU agirligi dusuk -> ani konum sicramalarinda ID korunur.
+  matchingScoreWeight4Iou: 0.40
+  tentativeDetectorConfidence: 0.40
+  minMatchingScore4TentativeIou: 0.35
+
+StateEstimator:
+  stateEstimatorType: 1
+  # Calm: dusuk process noise -> daha az titreme, yavas manevraya uygun.
+  processNoiseVar4Loc: 1.6
+  processNoiseVar4Size: 0.9
+  processNoiseVar4Vel: 0.75
+  measurementNoiseVar4Detector: 3.5
+  measurementNoiseVar4Tracker: 6.0
+
+VisualTracker:
+  visualTrackerType: 1
+  useColorNames: 1
+  useHog: 0
+  featureImgSizeLevel: 1
+  featureFocusOffsetFactor_y: -0.2
+  # Calm: dusuk ogrenme hizi = daha stabil filtre, daha az jitter.
+  filterLr: 0.09
+  filterChannelWeightsLr: 0.10
+  gaussianSigma: 0.72

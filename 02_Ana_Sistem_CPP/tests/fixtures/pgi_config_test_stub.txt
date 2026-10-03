@@ -1,0 +1,2 @@
+# Entegrasyon testi icin minimal nvinfer config (model-engine erken dogrulama).
+model-engine-file=/dev/null

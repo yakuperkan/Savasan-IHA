@@ -1,0 +1,11 @@
+[Unit]
+Description=VNC acilis guvencesi (boot sonrasi tigervnc-x0 kontrol)
+After=network.target graphical.target
+
+[Timer]
+OnBootSec=90s
+OnUnitActiveSec=5min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

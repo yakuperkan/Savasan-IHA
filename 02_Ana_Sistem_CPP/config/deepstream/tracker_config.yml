@@ -1,0 +1,222 @@
+%YAML:1.0
+# =============================================================================
+# NvDCF Tracker — DEFAULT profil (dengeli)
+# =============================================================================
+# Dosya: tracker_config.yml
+# Secim: SAVASAN_TRACKER_PROFILE=default  (veya bos)
+#
+# Ne yapar?
+#   YOLO kutularini kareler arasi takip eder (track_id uretir).
+#   Uretim pgie: config_infer_primary.txt interval=0 -> her karede YOLO + NvDCF.
+#
+# Degisiklik sonrasi: BUILD YOK, uygulama RESTART gerekir.
+#
+# HIZLI TUNING REHBERI (Savasan IHA)
+# -----------------------------------------------------------------------------
+# Sorun                    | Artir                    | Azalt
+# -------------------------|--------------------------|---------------------------
+# Sahte hedef / spike      | minDetectorConfidence    | maxTargetsPerStream
+#                          | tentativeDetectorConf    | maxShadowTrackingAge
+# Kilit kaybi (okluzyon)   | maxShadowTrackingAge     | minDetectorConfidence
+#                          | probationAge             | earlyTerminationAge
+# Kutu titremesi (jitter)  | measurementNoiseDet.     | processNoiseVar4Loc/Vel
+#                          | filterLr dusuk           | matchingWeight IoU
+# Hizli manevra takibi     | processNoiseVar4Vel      | measurementNoiseDet.
+#                          | matchingWeight4Iou       | minMatchingScore4Visual
+# YOLO kutusu zipliyor     | measurementNoiseDet.     | processNoiseVar4Loc
+# ID degisiyor (switch)    | minIouDiff4NewTarget     | probationAge
+#                          | matchingWeight4Visual    | matchingWeight4Iou
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# BaseConfig — Temel detector esikleri
+# -----------------------------------------------------------------------------
+BaseConfig:
+  # minDetectorConfidence — YOLO kutusunun track'e girebilmesi icin min guven.
+  # Aralik: 0.0-1.0  |  Pratik Savasan: 0.30-0.50  |  NVIDIA perf ornegi: 0.0
+  # Artir: gokyuzu parlamasi/FP coksa, tracker spike'i varsa, sahte track aciliyorsa.
+  # Azalt: gercek hedef zayif tespit ediliyorsa, uzak/ kucuk UAV kayboluyorsa.
+  minDetectorConfidence: 0.40
+
+# -----------------------------------------------------------------------------
+# TargetManagement — Hedef yasam dongusu
+# -----------------------------------------------------------------------------
+TargetManagement:
+  # enableBboxUnClipping — Kadraj kenarinda kutu kesilmesin mi?
+  # Aralik: 0 veya 1  |  Savasan: genelde 1 (hedef kadraj disina cikabilir).
+  enableBboxUnClipping: 1
+
+  # preserveStreamUpdateOrder — Coklu stream sirasini koru.
+  # Aralik: 0 veya 1  |  Tek USB kamera: 0 yeterli.
+  preserveStreamUpdateOrder: 0
+
+  # maxTargetsPerStream — Ayni anda max kac track (shadow dahil).
+  # Aralik: 1-150  |  Pratik Savasan: 2-6  |  NVIDIA perf: 150 (genel amacli)
+  # Artir: coklu hedef senaryosu (nadir Savasan'da gerekmez).
+  # Azalt: FP/spike, tracker ms artisi; 1-2 gercek hedef icin 4 ideal.
+  maxTargetsPerStream: 4
+
+  # minIouDiff4NewTarget — Yeni track acmak icin mevcutlardan min IoU farki.
+  # Aralik: 0.0-1.0  |  Pratik: 0.40-0.60  |  NVIDIA perf: 0.5
+  # Artir: ayni hedefe cift track/ID parcalanmasi varsa.
+  # Azalt: iki yakin hedef ayirt edilemiyorsa (Savasan'da nadir).
+  minIouDiff4NewTarget: 0.50
+
+  # minTrackerConfidence — Bu altinda track "shadow" moduna duser.
+  # Aralik: 0.0-1.0  |  Pratik: 0.15-0.35  |  NVIDIA perf: 0.2
+  # Artir: dusuk kaliteli track'ler erken shadow'a duser (temizlik).
+  # Azalt: shadow'a cok erken dusuyor, kisa okluzyonda kayip varsa.
+  minTrackerConfidence: 0.22
+
+  # probationAge — Yeni track kac kare sonra "onayli" sayilir.
+  # Aralik: 0-10 kare  |  Pratik Savasan: 0-3  |  NVIDIA perf: 3
+  # Artir: sahte kisa omurlu FP'leri elemek (2 = 2 kare dayanmali).
+  # Azalt: hedefe hizli kilitlenmek, gecikme azaltmak (0 = aninda onay).
+  probationAge: 2
+
+  # maxShadowTrackingAge — Detector kutusu yokken track kac kare daha yasar.
+  # Aralik: 0-100+ kare  |  Pratik Savasan: 4-30  |  NVIDIA perf: 30
+  # Artir: kisa okluzyon/kaybolmada ID korunur (kilit kaybi azalir).
+  # Azalt: sahte track uzun yasar, tracker spike/ms artar (8-12 onerilir).
+  maxShadowTrackingAge: 12
+
+  # earlyTerminationAge — Tentative donemde erken silme esigi (kare).
+  # Aralik: 1-10  |  Pratik: 1-4  |  NVIDIA perf: 1
+  # Artir: zayif track daha uzun sans alir (okluzyon toleransi).
+  # Azalt: sahte track hizla silinir (performans + temizlik).
+  earlyTerminationAge: 4
+
+# -----------------------------------------------------------------------------
+# TrajectoryManagement
+# -----------------------------------------------------------------------------
+TrajectoryManagement:
+  # useUniqueID — Global 64-bit ID (coklu kamera/re-id).
+  # Aralik: 0 veya 1  |  Tek kamera Savasan: 0.
+  useUniqueID: 0
+
+# -----------------------------------------------------------------------------
+# DataAssociator — Kutu <-> track eslestirme
+# -----------------------------------------------------------------------------
+DataAssociator:
+  dataAssociatorType: 0
+  associationMatcherType: 0
+
+  # checkClassMatch — Ayni sinif zorunlu (tek sinif UAV'de etkisi sinirli).
+  # Aralik: 0 veya 1
+  checkClassMatch: 1
+
+  # minMatchingScore4Overall — Genel eslestirme alt siniri.
+  # Aralik: 0.0-1.0  |  Pratik: 0.05-0.25  |  NVIDIA perf: 0.0
+  # Artir: yanlis eslestirme/ID jump azalir; kilit kaybi artabilir.
+  # Azalt: eslestirme gevser, hizli manevrada track tutulur.
+  minMatchingScore4Overall: 0.10
+
+  # minMatchingScore4SizeSimilarity — Boyut benzerligi alt siniri.
+  # Aralik: 0.0-1.0  |  Pratik: 0.45-0.70  |  NVIDIA perf: 0.6
+  # Artir: farkli boyuttaki FP'ler eslesmez (uzak/kucuk sahte hedef).
+  # Azalt: hedef hizla yaklasip bbox buyuyorsa eslestirme kolaylasir.
+  minMatchingScore4SizeSimilarity: 0.55
+
+  # minMatchingScore4Iou — IoU alt siniri (0 = sadece agirlikla kullanilir).
+  # Aralik: 0.0-1.0  |  Pratik: 0.0-0.30
+  minMatchingScore4Iou: 0.00
+
+  # minMatchingScore4VisualSimilarity — ColorNames benzerlik alt siniri.
+  # Aralik: 0.0-1.0  |  Pratik: 0.35-0.55  |  NVIDIA perf: 0.7
+  # Artir: gorsel olarak benzer olmayan kutular eslesmez (ID koruma).
+  # Azalt: hizli hareket/parlama sonrasi gorsel degisimde eslestirme kolaylasir.
+  minMatchingScore4VisualSimilarity: 0.45
+
+  # matchingScoreWeight4* — Eslestirme agirliklari; toplam ~1.0 olmali.
+  # Visual: 0.0-1.0  |  Size: 0.0-1.0  |  IoU: 0.0-1.0
+  # Visual artir: stabil/dusuk hiz, titreme azaltma (calm profil mantigi).
+  # IoU artir: hizli manevra, konum oncelikli (aggressive profil mantigi).
+  # Size artir: mesafe degisiminde (yaklasan/uzaklasan hedef) boyut onemli.
+  matchingScoreWeight4VisualSimilarity: 0.45
+  matchingScoreWeight4SizeSimilarity: 0.25
+  matchingScoreWeight4Iou: 0.30
+
+  # minMatchingScore4TentativeIou — Tentative track IoU esigi.
+  # Aralik: 0.0-1.0  |  Pratik: 0.25-0.45
+  minMatchingScore4TentativeIou: 0.35
+
+  # tentativeDetectorConfidence — Tentative track acma min guveni.
+  # Aralik: 0.0-1.0  |  Pratik: minDetectorConfidence ile ayni veya biraz dusuk
+  # Artir: dusuk skorlu kutular icin yeni filtre acilmaz (spike azalir).
+  # Azalt: zayif ama gercek hedefler icin erken track baslar.
+  tentativeDetectorConfidence: 0.40
+
+# -----------------------------------------------------------------------------
+# StateEstimator — Kalman (konum / boyut / hiz)
+# -----------------------------------------------------------------------------
+# NOT: Bu degerler normalize bbox koordinatlarinda calisir; NVIDIA perf
+#      ornegiyle ayni olcek (binlerce degil). Karsilastirma: calm < default < aggressive.
+StateEstimator:
+  stateEstimatorType: 1
+
+  # processNoiseVar4Loc — Konum tahmin gurultusu (merkez x,y).
+  # Aralik: 0.5-5.0  |  NVIDIA perf: 2.0  |  calm: 1.6  |  aggressive: 3.2
+  # Artir: hizli yatay/dikey manevra, ani kamera hareketi.
+  # Azalt: hover/stabil ucus, kutu titremesi (jitter) fazlaysa.
+  processNoiseVar4Loc: 2.5
+
+  # processNoiseVar4Size — Bbox boyut degisim gurultusu.
+  # Aralik: 0.3-2.5  |  NVIDIA perf: 1.0  |  calm: 0.9  |  aggressive: 1.4
+  # Artir: hedef hizla yaklasiyor/uzaklasiyor (bbox buyuk degisim).
+  # Azalt: sabit mesafede ucus, boyut ziplamasi varsa.
+  processNoiseVar4Size: 1.2
+
+  # processNoiseVar4Vel — Hiz tahmin gurultusu.
+  # Aralik: 0.1-3.0  |  NVIDIA perf: 0.1  |  calm: 0.75  |  aggressive: 1.45
+  # Artir: sert donus, yuksek hiz farki, lag (gecikme) hissediliyorsa.
+  # Azalt: dusuk hiz, hiz vektoru titriyorsa, overshoot varsa.
+  processNoiseVar4Vel: 2.0
+
+  # measurementNoiseVar4Detector — YOLO kutusuna guven (olcum gurultusu).
+  # Aralik: 2.0-10.0  |  NVIDIA perf: 4.0  |  calm: 3.5  |  aggressive: 5.0
+  # Artir: YOLO kutusu zipliyor, parlama/gurultude bbox oynuyorsa (YOLO'ya az guven).
+  # Azalt: YOLO stabil ama tracker gecikiyorsa (YOLO'ya daha cok guven).
+  measurementNoiseVar4Detector: 4.0
+
+  # measurementNoiseVar4Tracker — NvDCF gorsel kutusuna guven.
+  # Aralik: 4.0-20.0  |  NVIDIA perf: 16.0  |  bizim profiller: 6.0-8.5
+  # Artir: gorsel track kayiyor, renk/arka plan degisimi coksa.
+  # Azalt: ara karelerde (interval>0) veya dusuk YOLO sikliginda gorsele guven.
+  measurementNoiseVar4Tracker: 7.0
+
+# -----------------------------------------------------------------------------
+# VisualTracker — NvDCF gorsel ozellikler
+# -----------------------------------------------------------------------------
+VisualTracker:
+  visualTrackerType: 1
+
+  # useColorNames — GPU renk ozelligi (onerilen: 1).
+  # useHog — CPU HOG (onerilen: 0; spike riski). En az biri 1 olmali.
+  useColorNames: 1
+  useHog: 0
+
+  # featureImgSizeLevel — Ozellik cozunurlugu.
+  # Aralik: 1-5 (12x12 .. 36x36)  |  perf: 2  |  biz: 1 (hizli)
+  # Artir: daha hassas takip, daha agir islem + spike riski.
+  # Azalt: latency/spike oncelikli (1 en hafif).
+  featureImgSizeLevel: 1
+
+  # featureFocusOffsetFactor_y — Odak kaydirma (Y ekseni).
+  # Aralik: -0.5 .. +0.5  |  Negatif = kadraj ustune odak (UAV gokyuzu).
+  featureFocusOffsetFactor_y: -0.2
+
+  # filterLr — DCF ogrenme hizi.
+  # Aralik: 0.0-1.0  |  Pratik: 0.06-0.15  |  NVIDIA perf: 0.075
+  # Artir: hizli manevra, arka plan degisimi (aggressive: ~0.13).
+  # Azalt: titreme/jitter azaltma (calm: ~0.09).
+  filterLr: 0.11
+
+  # filterChannelWeightsLr — Kanal agirlik ogrenme hizi.
+  # Aralik: 0.0-1.0  |  Pratik: 0.05-0.15  |  NVIDIA perf: 0.1
+  filterChannelWeightsLr: 0.10
+
+  # gaussianSigma — DCF arama penceresi genisligi (piksel).
+  # Aralik: 0.5-1.2  |  NVIDIA perf: 0.75
+  # Artir: hizli hareket toleransi, biraz daha agir.
+  # Azalt: dar arama, daha stabil ama hizli hedefte kayip riski.
+  gaussianSigma: 0.78

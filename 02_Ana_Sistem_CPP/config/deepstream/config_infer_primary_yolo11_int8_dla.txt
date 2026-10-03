@@ -1,0 +1,67 @@
+# YOLO11 INT8 + DLA Configuration for DeepStream 7.1
+# SAVASAN IHA Project - Primary Detector Config
+
+[property]
+# GPU/Device Configuration
+gpu-id=0
+gpu-uuid=
+net-scale-factor=0.0039215697906911373
+model-color-format=0
+
+# Network Configuration
+custom-network-config=config_infer_primary_yoloV5.txt
+model-file=
+model-engine-file=../../03_Modeller/yolo11_uav/model_yolo11_int8_dla0.engine
+labelfile-path=../../03_Modeller/yolo11_uav/labels.txt
+
+# Batch Configuration
+batch-size=1
+network-mode=2  # 0=FP32, 1=INT8, 2=FP16, 3=INT8+FP16 (auto)
+# INT8 için network-mode=1 veya 3, DLA için INT8 çalışması gerekir
+network-mode=1
+
+# DLA Configuration (Jetson Orin NX)
+# 0=GPU, 1=DLA0, 2=DLA1
+dla-core=1
+
+# Detection Configuration
+num-detected-classes=1
+interval=0
+gie-unique-id=1
+process-mode=1
+network-type=0
+cluster-mode=2
+maintain-aspect-ratio=1
+
+# Output Parsing
+parse-bbox-func-name=NvDsInferParseCustomYoloV5
+custom-lib-path=/opt/nvidia/deepstream/deepstream/lib/libnvdsinfer_custom_impl_Yolo.so
+
+# INT8 Calibration
+int8-calib-file=
+calibration-data-file=
+# TensorRT 10.x otomatik quantization için manuel calibration gerekmez
+
+# Performance Tuning
+# DLA kullanımı için lower memory footprint
+workspace-size=4294967296  # 4GB
+buffer-pool-size=4
+# DLA ile daha düşük memory footprint
+net-input-order=0
+
+# Thresholds
+# Savasan IHA senaryosu (1-2 hedef): gürültü/flare FP patlamasında NMS yükünü bastırmak için daha yüksek eşik.
+pre-cluster-threshold=0.33
+
+# NMS Configuration
+nms-iou-threshold=0.45
+topk=80
+
+# Debug
+# Debug level: 0=none, 1=errors, 2=warnings, 3=info, 4=verbose
+debug=1
+
+# Output Layers (YOLO11 için)
+# YOLO11 output layer ismi genellikle 'output0' veya '/model.22/cv3.0/cv2.0.0/Conv'
+# ONNX export'tan kontrol edilebilir
+output-blob-names=output0

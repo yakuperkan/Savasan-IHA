@@ -1,0 +1,10 @@
+[Unit]
+Description=Collect Savasan AIR_LOCK coredumps every 5 minutes
+
+[Timer]
+OnBootSec=120
+OnUnitActiveSec=300
+Unit=savasan-airlock-coredump-collect.service
+
+[Install]
+WantedBy=timers.target

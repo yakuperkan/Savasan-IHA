@@ -1,0 +1,7 @@
+[Unit]
+Description=Collect latest Savasan AIR_LOCK coredump artifact
+After=systemd-coredump.socket
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/savasan-coredump-collect.sh /home/nvidia/Savasan_IHA_Workspace/02_Ana_Sistem_CPP/build-app/savasan_iha /var/crash/savasan /var/lib/savasan/last_core_pid 15

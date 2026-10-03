@@ -1,0 +1,74 @@
+%YAML:1.0
+# =============================================================================
+# NvDCF Tracker — AGGRESSIVE profil (hizli manevra)
+# =============================================================================
+# Dosya: tracker_config_aggressive.yml
+# Secim: SAVASAN_TRACKER_PROFILE=aggressive
+#
+# Ne zaman kullanilir?
+#   - Yuksek hiz, sert manevra
+#   - Hedef hizla hareket ediyor, IoU ile konum takibi onemli
+#   - Biraz daha fazla jitter tolere edilir
+#
+# Default'dan farki:
+#   - Yuksek process noise (hizli harekete acik Kalman)
+#   - IoU agirligi yuksek (konum oncelikli eslestirme)
+#   - filterLr yuksek (hizli adaptasyon)
+#
+# Degisiklik sonrasi: BUILD YOK, uygulama RESTART gerekir.
+# =============================================================================
+
+BaseConfig:
+  # Minimum detector guveni. Yuksek = daha az sahte track.
+  minDetectorConfidence: 0.40
+
+TargetManagement:
+  enableBboxUnClipping: 1
+  preserveStreamUpdateOrder: 0
+  maxTargetsPerStream: 4
+  # Aggressive: yeni track acma esigi biraz gevsek (hizli gecislerde).
+  minIouDiff4NewTarget: 0.48
+  minTrackerConfidence: 0.30
+  probationAge: 2
+  maxShadowTrackingAge: 8
+  earlyTerminationAge: 1
+
+TrajectoryManagement:
+  useUniqueID: 0
+
+DataAssociator:
+  dataAssociatorType: 0
+  associationMatcherType: 0
+  checkClassMatch: 1
+  # Aggressive: genel eslestirme esigi biraz gevsek.
+  minMatchingScore4Overall: 0.08
+  minMatchingScore4SizeSimilarity: 0.55
+  minMatchingScore4Iou: 0.00
+  minMatchingScore4VisualSimilarity: 0.40
+  # Aggressive: gorsel agirlik dusuk.
+  matchingScoreWeight4VisualSimilarity: 0.40
+  matchingScoreWeight4SizeSimilarity: 0.05
+  # Aggressive: IoU agirligi yuksek -> hizli harekette konum eslestirmesi oncelikli.
+  matchingScoreWeight4Iou: 0.55
+  tentativeDetectorConfidence: 0.40
+  minMatchingScore4TentativeIou: 0.32
+
+StateEstimator:
+  stateEstimatorType: 1
+  # Aggressive: yuksek process noise -> hizli manevraya acik tahmin.
+  processNoiseVar4Loc: 3.2
+  processNoiseVar4Size: 1.4
+  processNoiseVar4Vel: 1.45
+  measurementNoiseVar4Detector: 5.0
+  measurementNoiseVar4Tracker: 8.5
+
+VisualTracker:
+  visualTrackerType: 1
+  useColorNames: 1
+  useHog: 0
+  featureImgSizeLevel: 1
+  featureFocusOffsetFactor_y: -0.2
+  # Aggressive: yuksek ogrenme hizi -> hizli adaptasyon, biraz daha titrek.
+  filterLr: 0.13
+  filterChannelWeightsLr: 0.10
+  gaussianSigma: 0.82

@@ -1,0 +1,33 @@
+# YOLO26s clean-2 FP16 (960x960). Varsayilan uretim config'ini DEGISTIRMEZ.
+# Calistirma: export SAVASAN_PGI_CONFIG=/home/nvidia/Savasan_IHA_Workspace/02_Ana_Sistem_CPP/config/deepstream/config_infer_primary_yolo26s_clean2_fp16.txt
+# ONNX: DeepStream-Yolo export_yolo26.py (static b1, imgsz=960)
+
+[property]
+gpu-id=0
+net-scale-factor=0.0039215697906911373
+model-color-format=0
+onnx-file=/home/nvidia/Savasan_IHA_Workspace/03_Modeller/yolo26s_clean-2/model_yolo26s_clean2_static_b1.onnx
+model-engine-file=/home/nvidia/Savasan_IHA_Workspace/03_Modeller/yolo26s_clean-2/model_yolo26s_clean2_orin_nx_fp16_b1_gpu0.engine
+labelfile-path=/home/nvidia/Savasan_IHA_Workspace/02_Ana_Sistem_CPP/config/deepstream/labels.txt
+batch-size=1
+# network-mode: 0=FP32, 1=INT8, 2=FP16
+network-mode=2
+enable-dla=0
+use-dla-core=0
+num-detected-classes=1
+interval=0
+gie-unique-id=1
+process-mode=1
+network-type=0
+cluster-mode=4
+maintain-aspect-ratio=1
+symmetric-padding=1
+parse-bbox-func-name=NvDsInferParseYolo
+custom-lib-path=/home/nvidia/Savasan_IHA_Workspace/98_Reference_Repos/DeepStream-Yolo-master/nvdsinfer_custom_impl_Yolo/libnvdsinfer_custom_impl_Yolo.so
+engine-create-func-name=NvDsInferYoloCudaEngineGet
+
+[class-attrs-all]
+nms-iou-threshold=0.45
+# Ilk A/B: uretim FP16 esigi ile ayni; clean-2 skor dagilimi farkliysa ayarlanir.
+pre-cluster-threshold=0.33
+topk=80

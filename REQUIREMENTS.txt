@@ -1,0 +1,232 @@
+# =============================================================================
+# Savasan IHA — Sistem Gereksinimleri (Faz 5 / Phase5)
+# =============================================================================
+# Bu dosya: Jetson Orin NX uzerinde workspace'i sifirdan kurarken ihtiyac
+# duyulan donanim, yazilim, dosya yollari ve dogrulama adimlarini listeler.
+#
+# Olculmus referans ortam (bu Jetson, 2026-06):
+#   Ubuntu 22.04.5 LTS | JetPack 6.2.2 | L4T 36.5.0
+#   DeepStream 7.1.0 | CUDA 12.6 | TensorRT 10.3.0
+#   GStreamer 1.20.3 | OpenCV 4.8.0 | Eigen 3.4.0
+#   GCC 11.4.0 | CMake 3.22.1 | Python 3.10.12
+#
+# Dogrulama scripti:
+#   bash /home/nvidia/Savasan_IHA_Workspace/scripts/check_requirements.sh
+# =============================================================================
+
+
+# -----------------------------------------------------------------------------
+# 1) DONANIM
+# -----------------------------------------------------------------------------
+[HARDWARE]
+platform          = Jetson Orin NX (ARM64, Cortex-A78AE)
+recommended_ram   = 16 GB (8 GB calisir; engine workspace icin 16 GB onerilir)
+storage_min       = 32 GB bos alan (modeller + build + log)
+camera_usb        = V4L2 (/dev/video0), onerilen 640x480@60
+serial_autopilot  = USB-UART veya tty (AlcLink / MAVLink-benzeri)
+network           = Ethernet veya Wi-Fi (SIHA HTTP API, istege bagli UDP stream)
+display_optional  = HDMI + X11 (:0) — onizleme icin; headless bench icin gerekmez
+
+
+# -----------------------------------------------------------------------------
+# 2) ISLETIM SISTEMI ve NVIDIA YIGINI (JetPack)
+# -----------------------------------------------------------------------------
+[OS]
+distro            = Ubuntu 22.04 LTS (Jammy)
+arch              = aarch64 (arm64)
+jetpack           = 6.2.x (onerilen: 6.2.2)
+l4t               = 36.5.x
+
+[NVIDIA_STACK]
+deepstream        = 7.1.0
+cuda              = 12.6
+tensorrt          = 10.3.0
+gstreamer         = 1.20.3
+opencv            = 4.8.0  (JetPack ile gelir; C++ uygulama dogrudan baglamaz)
+
+# JetPack kurulumu (sifirdan flash sonrasi):
+#   NVIDIA SDK Manager veya jetson-flash ile JP 6.2.x
+#   Ardindan DeepStream 7.1 Jetson paketi:
+#     sudo apt install deepstream-7.1
+#   Kontrol:
+#     deepstream-app --version-all
+#     gst-inspect-1.0 nvinfer
+#     gst-inspect-1.0 nvtracker
+
+
+# -----------------------------------------------------------------------------
+# 3) DERLEME ARACLARI (APT)
+# -----------------------------------------------------------------------------
+[APT_BUILD_PACKAGES]
+# Tek satirda kurulum:
+#   sudo apt-get update && sudo apt-get install -y \
+#     build-essential cmake pkg-config git \
+#     libglib2.0-dev \
+#     libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
+#     libcurl4-openssl-dev
+
+build-essential
+cmake                 # >= 3.10 (CMakeLists.txt minimum)
+pkg-config
+git
+libglib2.0-dev
+libgstreamer1.0-dev
+libgstreamer-plugins-base1.0-dev
+
+# CI test-only build (DeepStream binary gerekmez) icin yukaridakiler yeterli.
+# Tam uygulama (SAVASAN_BUILD_APP=ON) icin JetPack + DeepStream zorunlu.
+
+
+# -----------------------------------------------------------------------------
+# 4) DERLEME SECENEKLERI (CMake)
+# -----------------------------------------------------------------------------
+[CMAKE]
+workspace_cpp       = /home/nvidia/Savasan_IHA_Workspace/02_Ana_Sistem_CPP
+cxx_standard        = C++17
+build_type          = Release (varsayilan)
+cpu_flags           = -march=armv8.2-a -mtune=cortex-a78ae -O3
+
+# Tam uygulama:
+#   cd 02_Ana_Sistem_CPP && mkdir -p build && cd build
+#   cmake .. -DSAVASAN_BUILD_APP=ON -DSAVASAN_BUILD_TESTS=ON
+#   cmake --build . -j$(nproc)
+#
+# Sadece test (DeepStream olmadan, stub ile):
+#   cmake .. -DSAVASAN_BUILD_APP=OFF -DSAVASAN_BUILD_TESTS=ON
+#   cmake --build . -j$(nproc) && ctest --output-on-failure
+
+[CMAKE_DEEPSTREAM_PATHS]
+includes            = /opt/nvidia/deepstream/deepstream/sources/includes
+lib_dir             = /opt/nvidia/deepstream/deepstream/lib
+required_libs       = libnvbufsurface.so, libnvds_meta.so, libnvdsgst_meta.so
+
+
+# -----------------------------------------------------------------------------
+# 5) RUNTIME — DeepStream GStreamer pluginleri
+# -----------------------------------------------------------------------------
+[GSTREAMER_PLUGINS_RUNTIME]
+# Asagidaki pluginler gst-inspect ile gorunmeli:
+nvinfer
+nvtracker
+nvvideoconvert
+nvdsosd
+nvstreammux
+# Kamera:
+v4l2src             # USB BRIO
+
+
+# -----------------------------------------------------------------------------
+# 6) RUNTIME — Model ve parser (ZORUNLU DOSYALAR)
+# -----------------------------------------------------------------------------
+[MODEL_ARTIFACTS]
+# Config: 02_Ana_Sistem_CPP/config/deepstream/config_infer_primary.txt
+
+onnx_file           = 03_Modeller/yolo26_uav22/model_yolo26_static_b1.onnx
+engine_file         = 03_Modeller/yolo26_uav22/model_yolo26_orin_nx_fp16_b1_gpu0.engine
+labels_file         = 02_Ana_Sistem_CPP/config/deepstream/labels.txt
+tracker_config      = 02_Ana_Sistem_CPP/config/deepstream/tracker_config.yml
+tracker_lib         = /opt/nvidia/deepstream/deepstream/lib/libnvds_nvmultiobjecttracker.so
+
+# ONEMLI: TensorRT .engine dosyasi cihaza ozgudur!
+# Baska Jetson'dan kopyalamayin; hedef cihazda yeniden derleyin:
+#   bash 03_Modeller/yolo26_uav22/build_orin_nx_fp16_engine.sh
+# (yaklasik 10-15 dk, trtexec FP16)
+
+[DEEPSTREAM_YOLO_PARSER]
+# Git'e dahil DEGIL — yerelde clone + derleme gerekir.
+repo_url            = https://github.com/marcoslucianops/DeepStream-Yolo
+local_path          = 98_Reference_Repos/DeepStream-Yolo-master
+custom_so           = 98_Reference_Repos/DeepStream-Yolo-master/nvdsinfer_custom_impl_Yolo/libnvdsinfer_custom_impl_Yolo.so
+
+# Kurulum:
+#   mkdir -p 98_Reference_Repos && cd 98_Reference_Repos
+#   git clone https://github.com/marcoslucianops/DeepStream-Yolo DeepStream-Yolo-master
+#   cd DeepStream-Yolo-master
+#   export CUDA_VER=12.6    # DeepStream 7.1 Jetson
+#   make -C nvdsinfer_custom_impl_Yolo clean && make -C nvdsinfer_custom_impl_Yolo
+
+
+# -----------------------------------------------------------------------------
+# 7) WORKSPACE YOLU ve GIT DISI ICERIK
+# -----------------------------------------------------------------------------
+[WORKSPACE]
+root                = /home/nvidia/Savasan_IHA_Workspace
+production_code     = 02_Ana_Sistem_CPP/
+models              = 03_Modeller/
+scripts             = scripts/
+docs                = docs/
+
+# Repoda OLMAYAN (sifirdan kurulumda elle eklenmeli):
+#   98_Reference_Repos/          — DeepStream-Yolo clone
+#   00_Requirements_and_Rules/   — sartname (yerel)
+#   .cursor/                     — editor (opsiyonel)
+
+# Config dosyalarinda mutlak yol kullanilir; workspace farkli dizine
+# kurulacaksa ya /home/nvidia/Savasan_IHA_Workspace'a symlink ya da
+# config_infer_primary.txt icindeki yollari guncelleyin.
+
+
+# -----------------------------------------------------------------------------
+# 8) PYTHON (OPSİYONEL — model export / INT8 kalibrasyon)
+# -----------------------------------------------------------------------------
+# C++ uygulama calismasi icin Python ZORUNLU DEGIL.
+# Model ONNX export veya INT8 engine uretimi icin:
+
+[PYTHON_RUNTIME]
+version             = 3.10.x
+
+[PYTHON_PIP_PACKAGES_OPTIONAL]
+ultralytics         = 8.4.x   # YOLO export
+onnx                = 1.21.x
+numpy               = 2.2.x
+tensorrt            = 10.3.x  # Jetson pip wheel (JetPack ile uyumlu)
+opencv-python       = 4.x     # export scriptleri icin
+torch               = Jetson wheel (nv24.8 — JetPack'e bagli)
+
+# Ornek INT8/export:
+#   cd 03_Modeller/yolo26_uav22
+#   python3 01_build_fp16_baseline.py  (veya export_int8_orin.py)
+
+
+# -----------------------------------------------------------------------------
+# 9) SYSTEMD / SAHA KURULUMU (OPSİYONEL)
+# -----------------------------------------------------------------------------
+[SYSTEMD]
+install_script      = 02_Ana_Sistem_CPP/config/systemd/install.sh
+env_file            = /etc/savasan/savasan.env
+service             = savasan-airlock.service
+validate            = /usr/local/bin/savasan-validate-env.sh
+
+# Kurulum:
+#   cd 02_Ana_Sistem_CPP/config/systemd && sudo bash install.sh
+# Varsayilan: otomatik baslatma KAPALI (elle systemctl start)
+
+
+# -----------------------------------------------------------------------------
+# 10) MINIMUM DOGRULAMA KONTROL LISTESI
+# -----------------------------------------------------------------------------
+[CHECKLIST]
+# 1. deepstream-app --version-all  -> 7.1.0
+# 2. gst-inspect-1.0 nvinfer nvtracker
+# 3. libnvdsinfer_custom_impl_Yolo.so mevcut
+# 4. model_yolo26_orin_nx_fp16_b1_gpu0.engine mevcut (bu cihazda uretilmis)
+# 5. cmake + build basarili
+# 6. ctest --output-on-failure  (test build)
+# 7. Smoke:
+#      export SAVASAN_DISPLAY= SAVASAN_RUN_SECONDS=15
+#      ./build/savasan_iha phase5 usb hybrid
+# 8. Tam kontrol:
+#      bash scripts/check_requirements.sh
+
+[KNOWN_GOTCHAS]
+# - .engine dosyasi cihazlar arasi tasinmaz; her Jetson'da trtexec ile yeniden uret.
+# - 98_Reference_Repos gitignore'da; clone unutulursa nvinfer baslamaz.
+# - config_infer_primary.txt mutlak yol kullanir; workspace yolu degisirse guncelle.
+# - USB kamera: kullanici grubu 'video' ve /dev/video0 erisimi.
+# - Display onizleme: DISPLAY=:0 + aktif masaustu oturumu gerekir.
+# - Ucus: SAVASAN_ALC_DISABLE=0, seri port izinleri (dialout grubu).
+# - Performans: nvpmodel MAXN (0) uçus icin onerilir; 25W modu FPS dusurur.
+
+# -----------------------------------------------------------------------------
+# Son guncelleme: 2026-06-21
+# =============================================================================

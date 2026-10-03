@@ -1,0 +1,31 @@
+# YOLO26s INT8 QDQ DLA0 (960x960). Once yolo26s_int8_qdq_dla0.engine uretildikten sonra.
+# Calistirma: export SAVASAN_PGI_CONFIG=/home/nvidia/Savasan_IHA_Workspace/02_Ana_Sistem_CPP/config/deepstream/config_infer_primary_yolo26s_int8_qdq_dla.txt
+
+[property]
+gpu-id=0
+net-scale-factor=0.0039215697906911373
+model-color-format=0
+onnx-file=/home/nvidia/Savasan_IHA_Workspace/03_Modeller/int8_qdq/yolo26s_int8_qdq.onnx
+model-engine-file=/home/nvidia/Savasan_IHA_Workspace/03_Modeller/int8_qdq/yolo26s_int8_qdq_dla0.engine
+labelfile-path=/home/nvidia/Savasan_IHA_Workspace/02_Ana_Sistem_CPP/config/deepstream/labels.txt
+batch-size=1
+network-mode=1
+enable-dla=1
+use-dla-core=0
+num-detected-classes=1
+interval=2
+gie-unique-id=1
+process-mode=1
+network-type=0
+cluster-mode=4
+maintain-aspect-ratio=1
+symmetric-padding=1
+parse-bbox-func-name=NvDsInferParseYolo
+custom-lib-path=/home/nvidia/Savasan_IHA_Workspace/98_Reference_Repos/DeepStream-Yolo-master/nvdsinfer_custom_impl_Yolo/libnvdsinfer_custom_impl_Yolo.so
+engine-create-func-name=NvDsInferYoloCudaEngineGet
+
+[class-attrs-all]
+nms-iou-threshold=0.45
+# Spike azaltma: NMS'e giren adaylari sert azalt (1-2 hedef senaryosu).
+pre-cluster-threshold=0.30
+topk=80

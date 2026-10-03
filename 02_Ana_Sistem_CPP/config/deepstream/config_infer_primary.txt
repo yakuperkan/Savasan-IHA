@@ -1,0 +1,35 @@
+# Aktif: YOLO26 UAV (1 sinif). DeepStream-Yolo: YOLO26 -> cluster-mode=4
+# interval=0 -> her karede YOLO inference (tam detector modu; NvDCF her karede track surer).
+# Tracker-driven mod icin interval=2 (her 3. karede YOLO) denenebilir — GPU yuku duser.
+# YOLO11'e donmek: SAVASAN_PGI_CONFIG ile config_infer_primary_yolo11.txt kullan
+
+[property]
+gpu-id=0
+net-scale-factor=0.0039215697906911373
+model-color-format=0
+onnx-file=/home/nvidia/Savasan_IHA_Workspace/03_Modeller/yolo26_uav22/model_yolo26_static_b1.onnx
+# FP16 engine: bu Jetson Orin NX uzerinde trtexec ile derlendi (cihazlar arasi kopyalanmaz)
+model-engine-file=/home/nvidia/Savasan_IHA_Workspace/03_Modeller/yolo26_uav22/model_yolo26_orin_nx_fp16_b1_gpu0.engine
+labelfile-path=/home/nvidia/Savasan_IHA_Workspace/02_Ana_Sistem_CPP/config/deepstream/labels.txt
+batch-size=1
+network-mode=2
+enable-dla=0
+use-dla-core=0
+num-detected-classes=1
+interval=0
+gie-unique-id=1
+process-mode=1
+network-type=0
+cluster-mode=4
+maintain-aspect-ratio=1
+symmetric-padding=1
+parse-bbox-func-name=NvDsInferParseYolo
+custom-lib-path=/home/nvidia/Savasan_IHA_Workspace/98_Reference_Repos/DeepStream-Yolo-master/nvdsinfer_custom_impl_Yolo/libnvdsinfer_custom_impl_Yolo.so
+engine-create-func-name=NvDsInferYoloCudaEngineGet
+
+[class-attrs-all]
+nms-iou-threshold=0.45
+# Savasan IHA senaryosu: kadrajda 1-2 gercek hedef, gokyuzu gurultusu/flare ile FP patlamasi olabiliyor.
+# NMS adaylarini agresif azalt -> spike'lari (p95/p99) bastir.
+pre-cluster-threshold=0.33
+topk=80

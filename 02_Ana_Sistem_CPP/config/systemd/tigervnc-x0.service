@@ -1,0 +1,22 @@
+[Unit]
+Description=TigerVNC x0 — mevcut GNOME masaustunu (:0) paylas
+After=network.target gdm.service user@1000.service graphical.target
+Wants=gdm.service user@1000.service
+# Guc kesintisi sonrasi otomatik acilis
+
+[Service]
+Type=simple
+User=nvidia
+Group=nvidia
+Environment=DISPLAY=:0
+ExecStartPre=/usr/local/bin/savasan-wait-for-display.sh /run/user/1000/gdm/Xauthority :0 300
+ExecStart=/usr/local/bin/savasan-start-tigervnc-x0.sh
+Restart=on-failure
+RestartSec=10
+StartLimitBurst=15
+StartLimitIntervalSec=300
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=graphical.target

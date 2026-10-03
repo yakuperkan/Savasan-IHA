@@ -1,0 +1,7 @@
+[Unit]
+Description=Savasan AIR_LOCK periodic healthcheck
+After=savasan-airlock.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/savasan-healthcheck.sh savasan-airlock.service /etc/savasan/savasan.env /usr/local/bin/savasan-validate-env.sh

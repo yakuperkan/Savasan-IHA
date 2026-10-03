@@ -1,0 +1,100 @@
+# Savasan IHA — repoda: kaynak kod, config, modeller (onnx/engine/pt), teknik metin;
+# PDF/gorsel/medya/sartname/AI artigi yok.
+
+# TensorRT / gecici
+**/calibration*.cache
+**/trtexec_build.log
+build/
+**/build-*/
+.cache/
+04_Denemeler_Sandbox/
+99_Yedekler_Backups/
+
+# Kayit/analiz ciktilari ve yedek kopyalar (agir, cmake/runtime uretir)
+output/
+**/*.bak
+
+# PDF ve raster/vector gorsel (jpg, sartname taramalari, diyagram png vb.)
+**/*.pdf
+!docs/YER_ISTASYONU_RF_ENTEGRASYON.pdf
+**/*.jpg
+**/*.jpeg
+**/*.png
+**/*.webp
+**/*.gif
+**/*.bmp
+**/*.tiff
+**/*.svg
+
+# Video / ham medya (dataset, demo)
+**/*.mp4
+**/*.mkv
+**/*.avi
+
+# Resmi sartname ve kurallar PDF’leri — yalnızca Jetson'da yerel / Official specification and rules PDFs — local only on Jetson
+00_Requirements_and_Rules/
+
+# Model dosyalari GitHub’a gidebilir (takim karari); agir dosya icin Git LFS dusunulebilir
+# *.engine
+# *.pt
+# *.onnx
+# *.weights
+
+# Model deneme/donusum ciktilari — hicbir config bunlara referans vermiyor
+03_Modeller/03_Modeller/
+03_Modeller/int8_qdq/
+03_Modeller/lastone/
+**/deployment_artifacts/
+
+# Referans repolar (yerelde clone; repoya alınmaz) / Reference repos (local clone; not committed to repo)
+98_Reference_Repos/
+
+# IDE / arac / gecici
+.idea/
+.qwen/
+__pycache__/
+*.pyc
+p3_dbg.log
+ds_headers_71
+ds_headers_canli
+
+# AI asistan / editor artiklari (kod deposuna girmez)
+AGENTS.md
+memory/
+.cursor/
+.cursorrules
+**/.claude/
+**/CLAUDE.md
+**/CODEX.md
+*CHAT_EXPORT*
+*glm*prompt*
+*GLM*prompt*
+97_Dokumanlar/GLM_PROMT_IHTI_BARA.md
+97_Dokumanlar/*GLM*
+97_Dokumanlar/*glm*
+claude_onerilenler.txt
+qwen_onerilenler.txt
+bfg.jar
+OPTIMIZED_*
+ci-logs/
+*.zip
+03_Modeller/yolo26s_clean-2/
+
+# Kok dizin gecici izleme / sohbet / rapor artiklari
+/ai_chat.txt
+/auto_monitor.sh
+/auto_monitor*.log
+/monitor_output.log
+/performance_report.txt
+/run_phase3_output.log
+/simple_monitor.sh
+/simple_monitor*.log
+/simple_telemetry.sh
+/simple_telemetry*.log
+/system_monitor.sh
+/telemetry_monitor.sh
+/telemetry_log.txt
+/telemetry_output.log
+/ISTENI_SORUNA_PAKETI.md
+/KAYNAK_REPLARANLAR_SUMMARY.md
+/SON_DURUM_RAPORU.md
