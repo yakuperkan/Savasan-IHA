@@ -17,7 +17,7 @@ Kamera (USB BRIO) → decode → nvstreammux → nvinfer (YOLO26) → nvtracker 
     → TrackSelector / lock → AlcLinkBridge (seri) + RF hub → güdüm / kaçış
 ```
 
-Varsayılan mission modu: **AIR_LOCK** (`phase5`). Tracker-driven inference: `nvinfer interval=2` (her 3. karede YOLO; ara kareler NvDCF).
+Varsayılan mission modu: **AIR_LOCK** (`phase5`). Üretim `nvinfer interval=0` (her karede YOLO).
 
 ---
 
@@ -94,17 +94,20 @@ Tam liste: `docs/README.md`, `docs/DEPLOYMENT.md`.
 
 ---
 
-## Performans (ölçülmüş — 2026-06-10)
+## Performans (ölçülmüş — son doğrulanmış pipeline)
 
-Koşu: `phase5 usb`, fakesink, YOLO26 FP16, `interval=2`, USB 640×480@60.
+Koşu: `phase5 usb`, fakesink (`SAVASAN_DISPLAY=`), mevcut üretim config, MAXN (nvpmodel 0), 25 sn.  
+Kaynak: `docs/NESNE_TAKIP_TEKNIK_RAPOR.md` §4.1.
 
-| Mod | FPS avg | Latency p95 | GPU avg | VDD_IN avg |
-|-----|---------|-------------|---------|------------|
-| MAXN, interval=2 | **57.8** | **61 ms** | 97.6% | 14.2 W |
-| MAXN, interval=1 | 47.9 | 78 ms | 98.6% | 15.7 W |
-| 25W, interval=2 | 45.6 | 132 ms | 95.5% | 11.9 W |
+| Metrik | Ortalama | Min / Max | p95 |
+|--------|----------|-----------|-----|
+| FPS | **27.01** | 23.50 / 30.60 | 29.80 |
+| End-to-end latency | **329.65 ms** | 286.40 / 411.50 | 379.50 ms |
+| GPU | **99.04%** | — | 99.20% |
+| VDD_IN | **17.48 W** | — | 19.83 W |
+| TJ | **47.84 °C** | — | 49.84 °C |
 
-**Karar:** `interval=2` korunur; `interval=1` GPU'yu daha çok yükler, throughput düşer. Uçuşta **MAXN** tercih edilir.
+GPU doygun; YOLO FP16 baskın maliyet. Eski 2026-06-10 tablosu (~58 FPS / ~61 ms) bu hattı yansıtmıyor.
 
 A/B script: `scripts/run_latency_test.sh phase5 usb`
 
