@@ -94,25 +94,6 @@ Tam liste: `docs/README.md`, `docs/DEPLOYMENT.md`.
 
 ---
 
-## Performans (ölçülmüş — son doğrulanmış pipeline)
-
-Koşu: `phase5 usb`, fakesink (`SAVASAN_DISPLAY=`), mevcut üretim config, MAXN (nvpmodel 0), 25 sn.  
-Kaynak: `docs/NESNE_TAKIP_TEKNIK_RAPOR.md` §4.1.
-
-| Metrik | Ortalama | Min / Max | p95 |
-|--------|----------|-----------|-----|
-| FPS | **27.01** | 23.50 / 30.60 | 29.80 |
-| End-to-end latency | **329.65 ms** | 286.40 / 411.50 | 379.50 ms |
-| GPU | **99.04%** | — | 99.20% |
-| VDD_IN | **17.48 W** | — | 19.83 W |
-| TJ | **47.84 °C** | — | 49.84 °C |
-
-GPU doygun; YOLO FP16 baskın maliyet. Eski 2026-06-10 tablosu (~58 FPS / ~61 ms) bu hattı yansıtmıyor.
-
-A/B script: `scripts/run_latency_test.sh phase5 usb`
-
----
-
 ## Test
 
 ```bash
